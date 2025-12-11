@@ -77,3 +77,4 @@ Open [http://localhost:3000](http://localhost:3000)
 - Supabase (PostgreSQL + Auth)
 - Chart.js
 # crm_e2x
+# crm_e2x
