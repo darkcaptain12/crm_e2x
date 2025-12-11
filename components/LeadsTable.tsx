@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import StatusBadge from './StatusBadge'
-import { deleteLead, convertToCustomer } from '@/app/actions/leads'
+import { deleteLead, convertToCustomer, updateLeadStatus } from '@/app/actions/leads'
 import LeadModal from './LeadModal'
 import SetActionDateModal from './SetActionDateModal'
 
@@ -128,7 +128,27 @@ export default function LeadsTable({ leads: initialLeads }: LeadsTableProps) {
                     {lead.kaynak}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={lead.durum || lead.status || 'Yeni'} />
+                    <select
+                      value={lead.durum || lead.status || 'Yeni'}
+                      onChange={async (e) => {
+                        const formData = new FormData()
+                        formData.append('durum', e.target.value)
+                        const result = await updateLeadStatus(lead.id, formData)
+                        if (result?.error) {
+                          alert(result.error)
+                        } else {
+                          setLeads(leads.map(l => l.id === lead.id ? { ...l, durum: e.target.value } : l))
+                        }
+                      }}
+                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option value="Yeni">Yeni</option>
+                      <option value="Arandı">Arandı</option>
+                      <option value="Teklif Gönderildi">Teklif Gönderildi</option>
+                      <option value="Satış Oldu">Satış Oldu</option>
+                      <option value="Ulaşılamadı">Ulaşılamadı</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">

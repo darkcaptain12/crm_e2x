@@ -1,11 +1,30 @@
 import { getCustomers } from '@/app/actions/customers'
 import Sidebar from '@/components/Sidebar'
 import CustomersTable from '@/components/CustomersTable'
+import CustomersFilters from '@/components/CustomersFilters'
 
-export default async function CustomersPage() {
+export const dynamic = 'force-dynamic'
+
+interface CustomersPageProps {
+  searchParams: {
+    sehir?: string
+    sektor?: string
+    odeme_durumu?: string
+    hizmet?: string
+  }
+}
+
+export default async function CustomersPage({ searchParams }: CustomersPageProps) {
+  const filters = {
+    sehir: searchParams.sehir,
+    sektor: searchParams.sektor,
+    odeme_durumu: searchParams.odeme_durumu,
+    hizmet: searchParams.hizmet,
+  }
+
   let customers = []
   try {
-    customers = await getCustomers()
+    customers = await getCustomers(filters)
   } catch (error) {
     console.error('Error loading customers page:', error)
   }
@@ -18,6 +37,7 @@ export default async function CustomersPage() {
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Müşteriler</h1>
           </div>
+          <CustomersFilters initialFilters={searchParams} />
           <CustomersTable customers={customers} />
         </div>
       </main>

@@ -35,9 +35,56 @@ export async function getOffers() {
   }
 }
 
-export async function createOffer(formData: FormData) {
+export async function getOffersByCustomer(customerId: string) {
   try {
     const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('crm_offers')
+      .select('*')
+      .eq('musteri_id', customerId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching offers by customer:', error)
+      return []
+    }
+    return data || []
+  } catch (error) {
+    console.error('Error in getOffersByCustomer:', error)
+    return []
+  }
+}
+
+export async function getOfferById(id: string) {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('crm_offers')
+      .select(`
+        *,
+        crm_customers!musteri_id (
+          firma,
+          telefon,
+          sektor
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching offer:', error)
+      return null
+    }
+    return data
+  } catch (error) {
+    console.error('Error in getOfferById:', error)
+    return null
+  }
+}
+
+export async function createOffer(formData: FormData) {
+  try {
+  const supabase = await createClient()
     const musteriId = formData.get('musteri_id') as string
     const hizmet = formData.get('hizmet') as string
     const tutar = formData.get('tutar') as string
@@ -73,14 +120,40 @@ export async function createOffer(formData: FormData) {
 
     console.log('Inserting offer with data:', insertData)
 
+  const { data, error } = await supabase
+    .from('crm_offers')
+      .insert(insertData)
+    .select()
+    .single()
+
+    if (error) {
+      console.error('offer insert error', error)
+      return { error: error.message }
+    }
+
+  revalidatePath('/offers')
+    revalidatePath('/customers')
+  return { data }
+  } catch (error) {
+    console.error('offer insert error', error)
+    return { error: 'Teklif kaydedilirken beklenmeyen bir hata oluştu.' }
+  }
+}
+
+export async function updateOfferStatus(id: string, formData: FormData) {
+  try {
+    const supabase = await createClient()
+    const durum = formData.get('durum') as string
+    
     const { data, error } = await supabase
       .from('crm_offers')
-      .insert(insertData)
+      .update({ durum })
+      .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      console.error('offer insert error', error)
+      console.error('Error updating offer status:', error)
       return { error: error.message }
     }
 
@@ -88,14 +161,14 @@ export async function createOffer(formData: FormData) {
     revalidatePath('/customers')
     return { data }
   } catch (error) {
-    console.error('offer insert error', error)
-    return { error: 'Teklif kaydedilirken beklenmeyen bir hata oluştu.' }
+    console.error('Error in updateOfferStatus:', error)
+    return { error: 'Teklif durumu güncellenirken bir hata oluştu.' }
   }
 }
 
 export async function updateOffer(id: string, formData: FormData) {
   try {
-    const supabase = await createClient()
+  const supabase = await createClient()
     const musteriId = formData.get('musteri_id') as string
     const hizmet = formData.get('hizmet') as string
     const tutar = formData.get('tutar') as string
@@ -132,20 +205,20 @@ export async function updateOffer(id: string, formData: FormData) {
 
     console.log('Updating offer with data:', updateData)
 
-    const { data, error } = await supabase
-      .from('crm_offers')
+  const { data, error } = await supabase
+    .from('crm_offers')
       .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
+    .eq('id', id)
+    .select()
+    .single()
 
     if (error) {
       console.error('offer update error', error)
       return { error: error.message }
     }
 
-    revalidatePath('/offers')
-    return { data }
+  revalidatePath('/offers')
+  return { data }
   } catch (error) {
     console.error('offer update error', error)
     return { error: 'Teklif güncellenirken beklenmeyen bir hata oluştu.' }

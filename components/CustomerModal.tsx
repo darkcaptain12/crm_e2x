@@ -7,9 +7,11 @@ interface Customer {
   id: string
   firma: string
   telefon: string
-  sektor: string
-  hizmet: string
+  sektor?: string | null
+  hizmet?: string | null
   odeme_durumu: string
+  sehir?: string | null
+  created_at?: string
 }
 
 interface CustomerModalProps {

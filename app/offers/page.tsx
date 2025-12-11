@@ -1,8 +1,18 @@
 import { getOffers } from '@/app/actions/offers'
 import Sidebar from '@/components/Sidebar'
 import OffersTable from '@/components/OffersTable'
+import OffersFilters from '@/components/OffersFilters'
 
-export default async function OffersPage() {
+export const dynamic = 'force-dynamic'
+
+interface OffersPageProps {
+  searchParams: { 
+    durum?: string
+    dateRange?: string
+  }
+}
+
+export default async function OffersPage({ searchParams }: OffersPageProps) {
   const offers = await getOffers().catch((error) => {
     console.error('Error loading offers page:', error)
     return []
@@ -16,7 +26,8 @@ export default async function OffersPage() {
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Teklifler</h1>
           </div>
-          <OffersTable offers={offers as any} />
+          <OffersFilters initialStatus={searchParams.durum} initialDateRange={searchParams.dateRange} />
+          <OffersTable offers={offers as any} filters={searchParams} />
         </div>
       </main>
     </div>

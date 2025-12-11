@@ -22,6 +22,27 @@ export async function getNotes() {
   }
 }
 
+export async function getNotesByRelated(relatedType: 'lead' | 'customer', relatedId: string) {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('crm_notes')
+      .select('*')
+      .eq('related_type', relatedType)
+      .eq('related_id', relatedId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching notes:', error)
+      return []
+    }
+    return data || []
+  } catch (error) {
+    console.error('Error in getNotesByRelated:', error)
+    return []
+  }
+}
+
 export async function createNote(formData: FormData) {
   const supabase = await createClient()
   const { data, error } = await supabase

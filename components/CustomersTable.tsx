@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import StatusBadge from './StatusBadge'
-import { deleteCustomer } from '@/app/actions/customers'
+import { deleteCustomer, updateCustomer } from '@/app/actions/customers'
 import CustomerModal from './CustomerModal'
 import CreateOfferModal from './CreateOfferModal'
 
@@ -117,7 +117,29 @@ export default function CustomersTable({
                     {customer.hizmet}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={customer.odeme_durumu} />
+                    <select
+                      value={customer.odeme_durumu}
+                      onChange={async (e) => {
+                        const formData = new FormData()
+                        formData.append('firma', customer.firma)
+                        formData.append('telefon', customer.telefon)
+                        formData.append('sektor', customer.sektor)
+                        formData.append('hizmet', customer.hizmet)
+                        formData.append('odeme_durumu', e.target.value)
+                        const result = await updateCustomer(customer.id, formData)
+                        if (result?.error) {
+                          alert(result.error)
+                        } else {
+                          setCustomers(customers.map(c => c.id === customer.id ? { ...c, odeme_durumu: e.target.value } : c))
+                        }
+                      }}
+                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option value="Beklemede">Beklemede</option>
+                      <option value="Ödeme Bekliyor">Ödeme Bekliyor</option>
+                      <option value="Ödendi">Ödendi</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">

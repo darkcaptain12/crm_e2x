@@ -3,17 +3,33 @@ import Sidebar from '@/components/Sidebar'
 import LeadsTable from '@/components/LeadsTable'
 import TodayLeadsCard from '@/components/TodayLeadsCard'
 import LeadStatusFilters from '@/components/LeadStatusFilters'
+import LeadsFilters from '@/components/LeadsFilters'
 import LeadScanForm from '@/components/LeadScanForm'
+import QuickLeadAdd from '@/components/QuickLeadAdd'
 
 export const dynamic = 'force-dynamic'
 
 interface LeadsPageProps {
-  searchParams: { durum?: string }
+  searchParams: { 
+    durum?: string
+    sehir?: string
+    sektor?: string
+    kaynak?: string
+  }
 }
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const statusFilter = searchParams.durum || 'Tümü'
-  const leads = await getLeads(statusFilter === 'Tümü' ? undefined : statusFilter).catch((error) => {
+  const filters = {
+    sehir: searchParams.sehir,
+    sektor: searchParams.sektor,
+    kaynak: searchParams.kaynak,
+  }
+  
+  const leads = await getLeads(
+    statusFilter === 'Tümü' ? undefined : statusFilter,
+    filters
+  ).catch((error) => {
     console.error('Error loading leads page:', error)
     return []
   })
@@ -37,7 +53,11 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
           <LeadScanForm />
 
+          <QuickLeadAdd />
+
           <LeadStatusFilters />
+
+          <LeadsFilters initialFilters={searchParams} />
 
           <TodayLeadsCard leads={todayLeads as any} />
 

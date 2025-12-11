@@ -3,13 +3,35 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function getCustomers() {
+export async function getCustomers(filters?: {
+  sehir?: string
+  sektor?: string
+  odeme_durumu?: string
+  hizmet?: string
+}) {
   try {
     const supabase = await createClient()
-    const { data, error } = await supabase
+    let query = supabase
       .from('crm_customers')
       .select('*')
       .order('created_at', { ascending: false })
+
+    if (filters) {
+      if (filters.sehir) {
+        query = query.ilike('sehir', `%${filters.sehir}%`)
+      }
+      if (filters.sektor) {
+        query = query.ilike('sektor', `%${filters.sektor}%`)
+      }
+      if (filters.odeme_durumu) {
+        query = query.eq('odeme_durumu', filters.odeme_durumu)
+      }
+      if (filters.hizmet) {
+        query = query.ilike('hizmet', `%${filters.hizmet}%`)
+      }
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching customers:', error)
@@ -19,6 +41,26 @@ export async function getCustomers() {
   } catch (error) {
     console.error('Error in getCustomers:', error)
     return []
+  }
+}
+
+export async function getCustomerById(id: string) {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('crm_customers')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching customer:', error)
+      return null
+    }
+    return data
+  } catch (error) {
+    console.error('Error in getCustomerById:', error)
+    return null
   }
 }
 

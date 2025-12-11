@@ -19,6 +19,10 @@ interface Offer {
 
 interface OffersTableProps {
   offers: Offer[]
+  filters?: {
+    durum?: string
+    dateRange?: string
+  }
 }
 
 function formatDate(dateString: string): string {
@@ -33,11 +37,34 @@ function formatDate(dateString: string): string {
 
 export default function OffersTable({
   offers: initialOffers,
+  filters = {},
 }: OffersTableProps) {
   const [offers, setOffers] = useState(initialOffers || [])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Apply filters
+  let filteredOffers = offers
+  if (filters.durum) {
+    filteredOffers = filteredOffers.filter(o => o.durum === filters.durum)
+  }
+  if (filters.dateRange) {
+    const now = new Date()
+    let startDate = new Date()
+    switch (filters.dateRange) {
+      case 'last7days':
+        startDate.setDate(now.getDate() - 7)
+        break
+      case 'last30days':
+        startDate.setDate(now.getDate() - 30)
+        break
+      case 'thisMonth':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        break
+    }
+    filteredOffers = filteredOffers.filter(o => new Date(o.created_at) >= startDate)
+  }
 
   const handleDelete = async (id: string) => {
     if (confirm('Bu teklifi silmek istediğinizden emin misiniz?')) {
@@ -62,6 +89,17 @@ export default function OffersTable({
           {error}
         </div>
       )}
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={() => {
+            setEditingOffer(null)
+            setIsModalOpen(true)
+          }}
+          className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          + Yeni Teklif Oluştur
+        </button>
+      </div>
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -88,17 +126,24 @@ export default function OffersTable({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {offers.length === 0 ? (
+              {filteredOffers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    Şu anda kayıtlı teklif yok.
+                    {offers.length === 0 
+                      ? 'Şu anda kayıtlı teklif yok.'
+                      : 'Filtrelere uygun teklif bulunamadı.'}
                   </td>
                 </tr>
               ) : (
-                offers.map((offer) => (
+                filteredOffers.map((offer) => (
                 <tr key={offer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {offer.crm_customers?.firma || 'N/A'}
+                    <a
+                      href={`/customers/${offer.musteri_id}`}
+                      className="text-primary-600 hover:text-primary-900"
+                    >
+                      {offer.crm_customers?.firma || 'N/A'}
+                    </a>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {offer.hizmet}
@@ -114,6 +159,13 @@ export default function OffersTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
+                      <a
+                        href={`/offers/${offer.id}`}
+                        className="text-primary-600 hover:text-primary-900"
+                        title="Detay"
+                      >
+                        👁️
+                      </a>
                       <button
                         onClick={() => handleEdit(offer)}
                         className="text-blue-600 hover:text-blue-900"

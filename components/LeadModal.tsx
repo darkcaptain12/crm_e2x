@@ -7,10 +7,13 @@ interface Lead {
   id: string
   firma: string
   telefon: string
-  sektor: string
-  kaynak: string
+  sektor?: string | null
+  kaynak?: string | null
   status?: string
   durum?: string
+  sehir?: string | null
+  next_action_date?: string | null
+  created_at?: string
 }
 
 interface LeadModalProps {
