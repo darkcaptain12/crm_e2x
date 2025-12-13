@@ -51,14 +51,14 @@ export async function getDashboardStats() {
     }).length || 0
 
     // Bu hafta eklenen lead sayısı
-    const newLeadsLast7Days = leads.data?.filter(
-      (lead) => new Date(lead.created_at) >= sevenDaysAgo
-    ).length || 0
+  const newLeadsLast7Days = leads.data?.filter(
+    (lead) => new Date(lead.created_at) >= sevenDaysAgo
+  ).length || 0
 
     // Bu ay verilen teklif sayısı
     const offersThisMonth = offers.data?.filter(
       (offer) => new Date(offer.created_at) >= firstDayOfMonth
-    ).length || 0
+  ).length || 0
 
     // Bu ay satışa dönen müşteri sayısı (customers with status "Satış Oldu" or offers with "Kabul Edildi")
     const wonDealsThisMonth = offers.data?.filter(
@@ -66,7 +66,7 @@ export async function getDashboardStats() {
         const offerDate = new Date(offer.created_at)
         return offerDate >= firstDayOfMonth && (offer.durum === 'Kabul Edildi' || offer.durum === 'Kabul edildi')
       }
-    ).length || 0
+  ).length || 0
 
     // Bugün aranacaklar listesi
     const todayLeadsList = leads.data?.filter((lead) => {
@@ -118,12 +118,12 @@ export async function getDashboardStats() {
       customer_name: offer.musteri_id ? customerMap[offer.musteri_id] || 'Bilinmeyen' : 'Bilinmeyen',
     }))
 
-    const todayCalls = notes.data?.filter(
-      (note) => {
-        const noteDate = new Date(note.due_date || note.created_at)
-        return noteDate.toDateString() === today.toDateString()
-      }
-    ).length || 0
+  const todayCalls = notes.data?.filter(
+    (note) => {
+      const noteDate = new Date(note.due_date || note.created_at)
+      return noteDate.toDateString() === today.toDateString()
+    }
+  ).length || 0
 
     // Last 30 days for chart
     const thirtyDaysAgo = new Date()
@@ -147,31 +147,31 @@ export async function getDashboardStats() {
       })
     }
 
-    const weeklyLeads = []
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      date.setHours(0, 0, 0, 0)
-      const nextDate = new Date(date)
-      nextDate.setDate(nextDate.getDate() + 1)
+  const weeklyLeads = []
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date()
+    date.setDate(date.getDate() - i)
+    date.setHours(0, 0, 0, 0)
+    const nextDate = new Date(date)
+    nextDate.setDate(nextDate.getDate() + 1)
 
-      const count = leads.data?.filter((lead) => {
-        const leadDate = new Date(lead.created_at)
-        return leadDate >= date && leadDate < nextDate
-      }).length || 0
+    const count = leads.data?.filter((lead) => {
+      const leadDate = new Date(lead.created_at)
+      return leadDate >= date && leadDate < nextDate
+    }).length || 0
 
-      weeklyLeads.push({
-        date: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
-        count,
-      })
-    }
+    weeklyLeads.push({
+      date: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
+      count,
+    })
+  }
 
-    const statusCounts = {
+  const statusCounts = {
       Yeni: leads.data?.filter((l) => (l.durum || l.status) === 'Yeni').length || 0,
       Arandı: leads.data?.filter((l) => (l.durum || l.status) === 'Arandı').length || 0,
       Teklif: leads.data?.filter((l) => (l.durum || l.status) === 'Teklif' || (l.durum || l.status) === 'Teklif Gönderildi').length || 0,
       Kazanıldı: leads.data?.filter((l) => (l.durum || l.status) === 'Kazanıldı' || (l.durum || l.status) === 'Satış Oldu').length || 0,
-    }
+  }
 
     // Conversion rate calculation
     const totalLeads = leads.data?.length || 0

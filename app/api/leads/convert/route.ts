@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       const body = await request.json();
       leadId = body.id || body.leadId || null;
     } else {
-      const formData = await request.formData();
+    const formData = await request.formData();
       leadId = formData.get("id") as string | null;
     }
 
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
 
     console.log("[lead-convert] Lead found:", {
       id: lead.id,
-      firma: lead.firma,
-      telefon: lead.telefon,
-      sektor: lead.sektor,
+        firma: lead.firma,
+        telefon: lead.telefon,
+        sektor: lead.sektor,
       sehir: lead.sehir,
     });
 
@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
       telefon: lead.telefon,
       sektor: lead.sektor || null,
       sehir: lead.sehir || null,
-      hizmet: "",
-      odeme_durumu: "Beklemede",
+        hizmet: "",
+        odeme_durumu: "Beklemede",
     };
 
     // Create customer

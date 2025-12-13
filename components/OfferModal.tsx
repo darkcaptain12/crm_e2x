@@ -44,8 +44,8 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
     if (offer) {
       // Update existing offer
       const result = await updateOffer(offer.id, formData)
-      if (result?.error) {
-        setError(result.error)
+    if (result?.error) {
+      setError(result.error)
         setIsSubmitting(false)
       } else {
         onClose()
@@ -57,8 +57,8 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
       if (result?.error) {
         setError(result.error)
         setIsSubmitting(false)
-      } else {
-        onClose()
+    } else {
+      onClose()
         router.refresh()
       }
     }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { getLeads } from '@/app/actions/leads'
 
 interface LeadsFiltersProps {
@@ -16,6 +16,7 @@ interface LeadsFiltersProps {
 export default function LeadsFilters({ initialFilters = {} }: LeadsFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
   const [filters, setFilters] = useState({
     durum: initialFilters.durum || '',
     sehir: initialFilters.sehir || '',
@@ -40,18 +41,42 @@ export default function LeadsFilters({ initialFilters = {} }: LeadsFiltersProps)
     fetchUniqueValues()
   }, [])
 
+  // Sync filters with URL params when they change externally
+  useEffect(() => {
+    setFilters({
+      durum: searchParams.get('durum') || '',
+      sehir: searchParams.get('sehir') || '',
+      sektor: searchParams.get('sektor') || '',
+      kaynak: searchParams.get('kaynak') || '',
+    })
+  }, [searchParams])
+
+  // Apply filters to URL with debounce
+  const applyFilters = useCallback((newFilters: typeof filters) => {
+    startTransition(() => {
+      const params = new URLSearchParams()
+      Object.entries(newFilters).forEach(([key, value]) => {
+        if (value) {
+          params.set(key, value)
+        }
+      })
+      const queryString = params.toString()
+      const newUrl = queryString ? `/leads?${queryString}` : '/leads'
+      router.push(newUrl)
+    })
+  }, [router, startTransition])
+
+  // Debounce function
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      applyFilters(filters)
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [filters, applyFilters])
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters({ ...filters, [key]: value })
-  }
-
-  const handleApplyFilters = () => {
-    const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value)
-      }
-    })
-    router.push(`/leads?${params.toString()}`)
   }
 
   const handleClearFilters = () => {
@@ -63,6 +88,11 @@ export default function LeadsFilters({ initialFilters = {} }: LeadsFiltersProps)
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
+      {isPending && (
+        <div className="mb-2 text-sm text-gray-500">
+          Filtreler uygulanıyor...
+        </div>
+      )}
       <div className="flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[150px]">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -135,12 +165,6 @@ export default function LeadsFilters({ initialFilters = {} }: LeadsFiltersProps)
           </select>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleApplyFilters}
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Filtrele
-          </button>
           {hasActiveFilters && (
             <button
               onClick={handleClearFilters}

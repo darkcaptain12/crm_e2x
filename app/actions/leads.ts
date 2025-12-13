@@ -206,13 +206,13 @@ export async function deleteLead(id: string) {
 
 export async function convertToCustomer(leadId: string) {
   try {
-    const supabase = await createClient()
-    
-    const { data: lead, error: leadError } = await supabase
-      .from('crm_leads')
-      .select('*')
-      .eq('id', leadId)
-      .single()
+  const supabase = await createClient()
+  
+  const { data: lead, error: leadError } = await supabase
+    .from('crm_leads')
+    .select('*')
+    .eq('id', leadId)
+    .single()
 
     if (leadError) {
       console.error('[convertToCustomer] Error fetching lead:', leadError)
@@ -224,18 +224,18 @@ export async function convertToCustomer(leadId: string) {
       return { error: 'Lead not found' }
     }
 
-    const { data: customer, error: customerError } = await supabase
-      .from('crm_customers')
-      .insert({
-        firma: lead.firma,
-        telefon: lead.telefon,
+  const { data: customer, error: customerError } = await supabase
+    .from('crm_customers')
+    .insert({
+      firma: lead.firma,
+      telefon: lead.telefon,
         sektor: lead.sektor || null,
         sehir: lead.sehir || null,
-        hizmet: '',
-        odeme_durumu: 'Beklemede',
-      })
-      .select()
-      .single()
+      hizmet: '',
+      odeme_durumu: 'Beklemede',
+    })
+    .select()
+    .single()
 
     if (customerError) {
       console.error('[convertToCustomer] Error creating customer:', customerError)
@@ -248,28 +248,191 @@ export async function convertToCustomer(leadId: string) {
     }
 
     // Update lead status before deletion
-    await supabase
+  await supabase
       .from('crm_leads')
       .update({ durum: 'Satış Oldu' })
       .eq('id', leadId)
 
     // Delete the lead
     const { error: deleteError } = await supabase
-      .from('crm_leads')
-      .delete()
-      .eq('id', leadId)
+    .from('crm_leads')
+    .delete()
+    .eq('id', leadId)
 
     if (deleteError) {
       console.warn('[convertToCustomer] Warning: Could not delete lead:', deleteError.message)
       // Don't fail if deletion fails - customer was created successfully
     }
 
-    revalidatePath('/leads')
-    revalidatePath('/customers')
+  revalidatePath('/leads')
+  revalidatePath('/customers')
     revalidatePath('/dashboard')
-    return { data: customer }
+  
+  // Return only serializable data to avoid "Cannot coerce the result to a single JSON object" error
+  // Convert any Date objects to ISO strings and ensure all values are serializable
+  const serializableCustomer = {
+    id: String(customer.id),
+    firma: String(customer.firma || ''),
+    telefon: String(customer.telefon || ''),
+    sektor: customer.sektor ? String(customer.sektor) : null,
+    sehir: customer.sehir ? String(customer.sehir) : null,
+    hizmet: customer.hizmet ? String(customer.hizmet) : '',
+    odeme_durumu: customer.odeme_durumu ? String(customer.odeme_durumu) : 'Beklemede',
+    ...(customer.created_at && { created_at: customer.created_at instanceof Date ? customer.created_at.toISOString() : String(customer.created_at) }),
+    ...(customer.updated_at && { updated_at: customer.updated_at instanceof Date ? customer.updated_at.toISOString() : String(customer.updated_at) }),
+  }
+  
+  return { data: serializableCustomer }
   } catch (error) {
     console.error('[convertToCustomer] Unexpected error:', error)
     return { error: error instanceof Error ? error.message : 'Conversion failed' }
+  }
+}
+
+export async function updateLeadStatusBulk(leadIds: string[], durum: string) {
+  try {
+    if (!leadIds || leadIds.length === 0) {
+      return { error: 'En az bir lead seçmelisiniz' }
+    }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('crm_leads')
+      .update({ durum })
+      .in('id', leadIds)
+      .select()
+
+    if (error) {
+      console.error('[updateLeadStatusBulk] Error:', error)
+      return { error: error.message }
+    }
+
+    revalidatePath('/leads')
+    revalidatePath('/dashboard')
+    return { data, success: true }
+  } catch (error) {
+    console.error('[updateLeadStatusBulk] Unexpected error:', error)
+    return { error: error instanceof Error ? error.message : 'Toplu durum güncelleme başarısız oldu' }
+  }
+}
+
+export async function deleteLeadBulk(leadIds: string[]) {
+  try {
+    if (!leadIds || leadIds.length === 0) {
+      return { error: 'En az bir lead seçmelisiniz' }
+    }
+
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('crm_leads')
+      .delete()
+      .in('id', leadIds)
+
+    if (error) {
+      console.error('[deleteLeadBulk] Error:', error)
+      return { error: error.message }
+    }
+
+    revalidatePath('/leads')
+    revalidatePath('/dashboard')
+    return { success: true, count: leadIds.length }
+  } catch (error) {
+    console.error('[deleteLeadBulk] Unexpected error:', error)
+    return { error: error instanceof Error ? error.message : 'Toplu silme başarısız oldu' }
+  }
+}
+
+export async function convertToCustomerBulk(leadIds: string[]) {
+  try {
+    if (!leadIds || leadIds.length === 0) {
+      return { error: 'En az bir lead seçmelisiniz' }
+    }
+
+    const supabase = await createClient()
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[],
+    }
+
+    // Process each lead
+    for (const leadId of leadIds) {
+      try {
+        // Fetch the lead
+        const { data: lead, error: leadError } = await supabase
+          .from('crm_leads')
+          .select('*')
+          .eq('id', leadId)
+          .single()
+
+        if (leadError || !lead) {
+          results.failed++
+          results.errors.push(`${leadId}: Lead bulunamadı`)
+          continue
+        }
+
+        // Create customer from lead data
+        const { data: customer, error: customerError } = await supabase
+          .from('crm_customers')
+          .insert({
+            firma: lead.firma,
+            telefon: lead.telefon,
+            sektor: lead.sektor || null,
+            sehir: lead.sehir || null,
+            hizmet: '',
+            odeme_durumu: 'Beklemede',
+          })
+          .select()
+          .single()
+
+        if (customerError || !customer) {
+          results.failed++
+          results.errors.push(`${lead.firma}: Müşteri oluşturulamadı - ${customerError?.message || 'Bilinmeyen hata'}`)
+          continue
+        }
+
+        // Update lead status before deletion
+        await supabase
+          .from('crm_leads')
+          .update({ durum: 'Satış Oldu' })
+          .eq('id', leadId)
+
+        // Delete the lead
+        const { error: deleteError } = await supabase
+          .from('crm_leads')
+          .delete()
+          .eq('id', leadId)
+
+        if (deleteError) {
+          console.warn(`[convertToCustomerBulk] Warning: Could not delete lead ${leadId}:`, deleteError.message)
+        }
+
+        results.success++
+      } catch (error) {
+        results.failed++
+        results.errors.push(`${leadId}: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`)
+      }
+    }
+
+    revalidatePath('/leads')
+    revalidatePath('/customers')
+    revalidatePath('/dashboard')
+
+    if (results.failed > 0 && results.success === 0) {
+      return { 
+        error: `Tüm dönüştürmeler başarısız oldu. Hatalar: ${results.errors.join('; ')}` 
+      }
+    }
+
+    return {
+      data: {
+        success: results.success,
+        failed: results.failed,
+        ...(results.errors.length > 0 && { errors: results.errors }),
+      }
+    }
+  } catch (error) {
+    console.error('[convertToCustomerBulk] Unexpected error:', error)
+    return { error: error instanceof Error ? error.message : 'Toplu dönüştürme başarısız oldu' }
   }
 }

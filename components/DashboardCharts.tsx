@@ -146,13 +146,13 @@ export default function DashboardCharts({
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Son 30 Günde Günlük Lead Sayısı</h2>
         {hasDailyData ? (
-          <div className="h-64">
+        <div className="h-64">
             <Line data={dailyLeadsData} options={chartOptions} />
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center text-gray-500">
             <p>Henüz yeterli veri yok. Lead ekledikçe grafik burada görünecek.</p>
-          </div>
+        </div>
         )}
       </div>
 
@@ -174,7 +174,7 @@ export default function DashboardCharts({
         ) : (
           <div className="h-64 flex items-center justify-center text-gray-500">
             <p>Henüz yeterli veri yok. Lead ve müşteri ekledikçe dönüşüm oranı burada görünecek.</p>
-          </div>
+        </div>
         )}
       </div>
     </div>

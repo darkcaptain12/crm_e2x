@@ -142,7 +142,7 @@ export default function OffersTable({
                       href={`/customers/${offer.musteri_id}`}
                       className="text-primary-600 hover:text-primary-900"
                     >
-                      {offer.crm_customers?.firma || 'N/A'}
+                    {offer.crm_customers?.firma || 'N/A'}
                     </a>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
